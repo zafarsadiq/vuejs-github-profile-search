@@ -1,0 +1,88 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+  <script type="text/x-template" id="template-github-user-card">
+	<div class="ui input">
+	  <input type="text" placeholder="username..." @input="$emit('get_username',$event.target.value)" :disabled="searching">
+	</div>
+  </script>
+</head>
+
+<body>
+
+  <div id="app" class="ui container">
+	
+    <h1>GitHub Profiles</h1>
+    <github-user-card @get_username="search" :searching="searching"></github-user-card>
+    <!-- Template for GitHub card -->
+    <div class="ui card" v-if="user_info">
+      <div class="image">
+        <img :src="user_info.avatar_url">
+      </div>
+      <div class="content">
+        <a class="header" :href="user_info.html_url" target="_blank">{{user_info.login}}</a>
+        <div class="meta">
+          <span class="date">Joined in {{new Date(user_info.created_at).getFullYear()}}</span>
+        </div>
+        <div class="description" v-if="user_info.bio">
+          {{user_info.bio}}
+        </div>
+      </div>
+      <div class="extra content">
+        <a :href="user_info.followers_url">
+          <i class="user icon"></i>
+          {{user_info.followers}} Followers
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Vue.js and axios -->
+  <script src="https://unpkg.com/vue@next"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+  <!-- Your JavaScript Code :) -->
+  <script>
+    let app = Vue.createApp({
+		data(){
+			return {
+				'username': 'abcd',
+				'user_info': null,
+				'searching': false,
+			}
+		},
+		methods: {
+			'search': _.debounce(function(u){
+				if(u != ''){
+					this.username = u;
+				}
+				
+			},500)
+		},
+		watch: {
+			username: function(){
+				let me = this;
+				me.searching = true;
+				axios.get("https://api.github.com/users/" + this.username).then(function(resp){
+					me.user_info = resp.data;
+					me.searching = false;	
+				}).catch(function(){
+					me.user_info = null;
+					me.searching = false;
+				});
+			}
+		}
+	});
+	app.component('github-user-card',{
+		template: "#template-github-user-card",
+		props: ['searching']
+	})
+	let ins = app.mount("#app");
+  </script>
+  
+  
+</body>
+
+</html>
